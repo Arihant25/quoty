@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Quoty",
     "version": "1.0",
-    "description": "Replaces ChatGPT header with random quotes",
+    "description": "Spice up your ChatGPT with quotes",
     "permissions": [
         "activeTab"
     ],

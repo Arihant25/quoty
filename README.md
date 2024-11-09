@@ -1,8 +1,9 @@
-# Quoty
-
+# <img src="images/128.png" alt="Quoty logo" width="32" height="32"> Quoty
 Quoty is a browser extension that displays an inspiring or thought-provoking quote each time you visit ChatGPT.
 
 With animated character-by-character text rendering, Quoty brings quotes to life right on your browser, while integrating seamlessly with the original ChatGPT experience.
+
+![Quoty in action](images/screenshot1.jpg)
 
 ## Features 🚀
 
