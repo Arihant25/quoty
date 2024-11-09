@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "Quoty",
+    "version": "1.0",
+    "description": "Replaces ChatGPT header with random quotes",
+    "permissions": [
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://quoteslate.vercel.app/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://chatgpt.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_start"
+        }
+    ]
+}
