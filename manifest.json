@@ -3,9 +3,7 @@
     "name": "Quoty",
     "version": "1.0",
     "description": "Spice up your ChatGPT with quotes",
-    "permissions": [
-        "activeTab"
-    ],
+    "permissions": [],
     "host_permissions": [
         "https://quoteslate.vercel.app/*"
     ],
