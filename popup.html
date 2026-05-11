@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Display</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #e0e0e0;
+      width: 280px;
+      padding: 18px;
+    }
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      background: #1c1c1c;
+      border: 1px solid #262626;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 7px 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #555;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      user-select: none;
+    }
+
+    .tab:hover:not(.active) { color: #999; }
+
+    .tab.active {
+      background: #fff;
+      color: #111;
+    }
+
+    /* Time style sub-option */
+    #time-options {
+      margin-top: 12px;
+    }
+
+    .sub-tabs {
+      display: flex;
+      background: #161616;
+      border: 1px solid #1e1e1e;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .sub-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #555;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      user-select: none;
+    }
+
+    .sub-tab:hover:not(.active) { color: #888; }
+
+    .sub-tab.active {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    /* Custom message section */
+    .custom-section {
+      margin-top: 12px;
+    }
+
+    .custom-section textarea {
+      width: 100%;
+      background: #1c1c1c;
+      border: 1px solid #262626;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 10px 11px;
+      outline: none;
+      font-family: inherit;
+      resize: none;
+    }
+
+    .custom-section textarea:focus { border-color: #3a3a3a; }
+    .custom-section textarea::placeholder { color: #3a3a3a; }
+
+    .status {
+      margin-top: 12px;
+      font-size: 11px;
+      color: transparent;
+      text-align: right;
+      min-height: 14px;
+      transition: color 0.2s;
+    }
+
+    .status.visible { color: #10a37f; }
+  </style>
+</head>
+<body>
+  <div class="label">Display</div>
+
+  <div class="tabs">
+    <div class="tab" data-mode="quote">Quote</div>
+    <div class="tab" data-mode="time">Time</div>
+    <div class="tab" data-mode="custom">Message</div>
+    <div class="tab" data-mode="off">Off</div>
+  </div>
+
+  <div id="time-options" style="display:none">
+    <div class="sub-tabs">
+      <div class="sub-tab" data-style="digital">Digital</div>
+      <div class="sub-tab" data-style="literary">Literary</div>
+    </div>
+  </div>
+
+  <div class="custom-section" id="custom-section" style="display:none">
+    <textarea id="custom-msg" rows="3" placeholder="Your message…"></textarea>
+  </div>
+
+  <div class="status" id="status">Saved</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

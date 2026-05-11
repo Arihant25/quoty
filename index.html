@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Replace the quote on your ChatGPT home screen with a fresh quote, the current time, or your own message." />
+  <title>Quoty | Chrome Extension</title>
+  <link rel="icon" href="images/128.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #111111;
+      --raised:    #171717;
+      --border:    #1e1e1e;
+      --border-2:  #2a2a2a;
+      --text:      #e8e8e8;
+      --text-2:    #5a5a5a;
+      --text-3:    #2e2e2e;
+      --accent:    #10a37f;
+      --accent-bg: rgba(16, 163, 127, 0.08);
+      --serif:     'Cormorant Garamond', Georgia, serif;
+      --sans:      'DM Sans', system-ui, sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 300px 300px;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 48px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-logo img {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+    }
+
+    .nav-logo-name {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-gh {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+    .nav-gh:hover { color: var(--text); }
+
+    /* ── Hero ────────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 24px 80px;
+      position: relative;
+    }
+
+    /* Subtle radial glow behind text */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 700px;
+      height: 400px;
+      background: radial-gradient(ellipse at center, rgba(16,163,127,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Mode pill row */
+    .mode-pills {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 52px;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.1s ease forwards;
+    }
+
+    .mode-pill {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      transition: color 0.4s, border-color 0.4s, background 0.4s;
+    }
+
+    .mode-pill.active {
+      color: var(--accent);
+      border-color: rgba(16, 163, 127, 0.35);
+      background: var(--accent-bg);
+    }
+
+    /* Main display */
+    .hero-display {
+      text-align: center;
+      max-width: 720px;
+      width: 100%;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.25s ease forwards;
+    }
+
+    .hero-text {
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(36px, 5.5vw, 64px);
+      line-height: 1.25;
+      color: var(--text);
+      transition: opacity 0.45s ease;
+    }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: var(--text-2);
+      margin-top: 18px;
+      transition: opacity 0.45s ease;
+    }
+
+    /* Tagline + CTA */
+    .hero-footer {
+      margin-top: 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.45s ease forwards;
+    }
+
+    .hero-tagline {
+      font-size: 16px;
+      color: var(--text-2);
+      letter-spacing: 0.01em;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 11px 22px;
+      border-radius: 100px;
+      cursor: default;
+      transition: border-color 0.2s, background 0.2s;
+      text-decoration: none;
+    }
+
+    .cta-btn:hover {
+      border-color: #3a3a3a;
+      background: var(--raised);
+    }
+
+    .cta-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    .cta-gh {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-2);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+    .cta-gh:hover { color: var(--text); }
+
+    /* Scroll hint */
+    .hero-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      color: var(--text-3);
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      animation: fadeUp 0.6s 0.9s ease forwards;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 32px;
+      background: linear-gradient(to bottom, var(--text-3), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────────────────── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Section base ────────────────────────────────────────────────────── */
+    section {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 96px 48px;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 50px);
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 56px;
+    }
+
+    /* ── Features ────────────────────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .feature {
+      background: var(--bg);
+      padding: 32px 28px;
+      transition: background 0.2s;
+    }
+
+    .feature:hover { background: var(--surface); }
+
+    .feature-icon {
+      font-size: 22px;
+      margin-bottom: 16px;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .feature-title {
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .feature-desc {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* ── Modes showcase ──────────────────────────────────────────────────── */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .mode-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      transition: border-color 0.2s;
+    }
+
+    .mode-card:hover { border-color: var(--border-2); }
+
+    .mode-card-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .mode-card-preview {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 22px;
+      font-weight: 300;
+      line-height: 1.35;
+      color: var(--text);
+      margin-bottom: 16px;
+      min-height: 52px;
+    }
+
+    .mode-card-desc {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* ── Popup preview ───────────────────────────────────────────────────── */
+    .popup-preview-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 56px;
+    }
+
+    .popup-mock {
+      background: #111;
+      border: 1px solid #262626;
+      border-radius: 14px;
+      padding: 18px;
+      width: 280px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 32px 80px rgba(0,0,0,0.7);
+    }
+
+    .popup-mock-label {
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    .popup-mock-tabs {
+      display: flex;
+      background: #1c1c1c;
+      border: 1px solid #262626;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .popup-mock-tab {
+      flex: 1;
+      text-align: center;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #555;
+      border-radius: 7px;
+    }
+
+    .popup-mock-tab.active {
+      background: #fff;
+      color: #111;
+    }
+
+    /* ── CTA section ─────────────────────────────────────────────────────── */
+    .cta-section {
+      text-align: center;
+    }
+
+    .cta-section .section-title {
+      margin-bottom: 28px;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .cta-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-2);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .cta-primary:hover {
+      background: var(--raised);
+      border-color: #3a3a3a;
+    }
+
+    .cta-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 12px 22px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .cta-secondary:hover {
+      color: var(--text);
+      border-color: var(--border-2);
+    }
+
+    .soon-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid rgba(16,163,127,0.2);
+      border-radius: 100px;
+      padding: 6px 14px;
+      margin-bottom: 32px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--text-2);
+    }
+
+    footer a {
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--text); }
+
+    /* ── Screenshots ─────────────────────────────────────────────────────── */
+    .screenshots {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .screenshot-figure {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .screenshot {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+
+    .screenshot-figure figcaption {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: var(--text-2);
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .plugin-preview {
+      display: flex;
+      justify-content: center;
+      margin-top: 32px;
+    }
+
+    .plugin-img {
+      max-width: 320px;
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    @media (max-width: 560px) {
+      .screenshots { grid-template-columns: 1fr; }
+    }
+
+    /* ── Animations ──────────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.3; transform: scaleY(1); }
+      50%       { opacity: 0.7; transform: scaleY(1.1); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      nav { padding: 18px 24px; }
+      section { padding: 72px 24px; }
+      footer { flex-direction: column; gap: 12px; text-align: center; padding: 24px; }
+      .hero { padding: 100px 24px 72px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <img src="images/128.png" alt="icon" />
+      <span class="nav-logo-name">Quoty</span>
+    </a>
+    <a class="nav-gh" href="https://github.com/Arihant25/quoty" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero::before"></div>
+
+    <div class="mode-pills">
+      <div class="mode-pill active" data-mode="quote">Quote</div>
+      <div class="mode-pill" data-mode="time">Time</div>
+      <div class="mode-pill" data-mode="message">Message</div>
+      <div class="mode-pill" data-mode="off">Off</div>
+    </div>
+
+    <div class="hero-display">
+      <p class="hero-text" id="heroText">"It always seems impossible until it's done."</p>
+      <p class="hero-sub" id="heroSub">Nelson Mandela · Quote Mode</p>
+    </div>
+
+    <div class="hero-footer">
+      <p class="hero-tagline">Replace the quote on your ChatGPT home screen. With anything.</p>
+      <div class="hero-cta-row">
+        <a class="cta-btn" href="https://chromewebstore.google.com/detail/quoty/napjbhgffnpcdaebebhnoiffjgeegbed" target="_blank" rel="noopener">
+          <span class="cta-dot"></span>
+          Install from Chrome Web Store
+        </a>
+        <a class="cta-gh" href="https://github.com/Arihant25/quoty#installation" target="_blank" rel="noopener">Install manually ↗</a>
+      </div>
+    </div>
+
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Features -->
+  <section>
+    <div class="section-label reveal">What it does</div>
+    <h2 class="section-title reveal">Every detail, exactly how you want it.</h2>
+
+    <div class="features-grid reveal">
+      <div class="feature">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title">Zero latency</div>
+        <div class="feature-desc">Quotes are fetched and cached in the background on your previous visit so that the moment ChatGPT loads, your content is already there.</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🕰</span>
+        <div class="feature-title">Literary time</div>
+        <div class="feature-desc">Choose digital or literary time display. <em style="font-family:var(--serif);font-style:italic">Three Forty Seven PM</em> instead of 3:47 PM, a small detail that makes the page feel considered.</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">✦</span>
+        <div class="feature-title">Smart filtering</div>
+        <div class="feature-desc">Quotes over 120 characters are automatically skipped and a new one is fetched. What appears is always concise enough to read at a glance.</div>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">◯</span>
+        <div class="feature-title">Full control</div>
+        <div class="feature-desc">Set a custom message, leave it empty to remove the field entirely, or switch it off completely. No placeholders, no residue.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Modes -->
+  <section>
+    <div class="section-label reveal">Modes</div>
+    <h2 class="section-title reveal">Four ways to fill the blank page.</h2>
+
+    <div class="modes-grid">
+      <div class="mode-card reveal">
+        <div class="mode-card-tag">Quote</div>
+        <div class="mode-card-preview">"That which does not kill us makes us stronger."</div>
+        <div class="mode-card-desc">A fresh quote on every visit, drawn from curated sources. Pre-cached so it appears instantly with no loading delay.</div>
+      </div>
+      <div class="mode-card reveal" style="transition-delay:0.08s">
+        <div class="mode-card-tag">Time · Literary</div>
+        <div class="mode-card-preview" style="font-family:var(--serif);font-style:italic">Three Forty Seven PM</div>
+        <div class="mode-card-desc">The current time, written out in words. Updates every second. A quiet, contemplative alternative to a digital clock.</div>
+      </div>
+      <div class="mode-card reveal" style="transition-delay:0.14s">
+        <div class="mode-card-tag">Time · Digital</div>
+        <div class="mode-card-preview">3:47 PM</div>
+        <div class="mode-card-desc">Clean, minimal digital clock. Same real-time updates, more familiar format.</div>
+      </div>
+      <div class="mode-card reveal" style="transition-delay:0.2s">
+        <div class="mode-card-tag">Message</div>
+        <div class="mode-card-preview" style="font-style:normal;letter-spacing:-0.01em">Ship it.</div>
+        <div class="mode-card-desc">Type anything: a goal, a reminder, a mantra. Leave it empty to hide the display area entirely. You decide what's there.</div>
+      </div>
+    </div>
+
+    <!-- Popup mockup -->
+    <div class="popup-preview-wrap reveal">
+      <div class="popup-mock">
+        <div class="popup-mock-label">Display</div>
+        <div class="popup-mock-tabs">
+          <div class="popup-mock-tab active">Quote</div>
+          <div class="popup-mock-tab">Time</div>
+          <div class="popup-mock-tab">Message</div>
+          <div class="popup-mock-tab">Off</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Screenshots -->
+  <section>
+    <div class="section-label reveal">In the wild</div>
+    <h2 class="section-title reveal">See it in action.</h2>
+    <div class="screenshots reveal">
+      <figure class="screenshot-figure">
+        <img src="images/darkdemo.png" alt="Dark mode demo" class="screenshot" />
+        <figcaption>Dark theme</figcaption>
+      </figure>
+      <figure class="screenshot-figure">
+        <img src="images/lightdemo.png" alt="Light mode demo" class="screenshot" />
+        <figcaption>Light theme</figcaption>
+      </figure>
+    </div>
+    <div class="plugin-preview reveal">
+      <img src="images/plugin.png" alt="Extension popup" class="plugin-img" />
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="section-title reveal">Open ChatGPT.<br>See something worth reading.</h2>
+    <div class="cta-group reveal">
+      <a class="cta-primary" href="https://chromewebstore.google.com/detail/quoty/napjbhgffnpcdaebebhnoiffjgeegbed" target="_blank" rel="noopener">
+        Install from Chrome Web Store
+      </a>
+      <a class="cta-secondary" href="https://github.com/Arihant25/quoty" target="_blank" rel="noopener">
+        View on GitHub ↗
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span>Quoty | Chrome Extension</span>
+    <span>
+      <a href="https://github.com/Arihant25/quoty" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      MIT License
+    </span>
+  </footer>
+
+  <script>
+    // ── Cycling hero demo ───────────────────────────────────────────────────
+    const STATES = [
+      { mode: 'quote',   text: '"It always seems impossible until it\'s done."',  sub: 'Nelson Mandela · Quote Mode' },
+      { mode: 'time',    text: 'Three Forty Seven PM',                            sub: 'Literary Time Mode' },
+      { mode: 'message', text: 'Ship it.',                                        sub: 'Custom Message Mode' },
+      { mode: 'time',    text: '3:47 PM',                                         sub: 'Digital Time Mode' },
+    ];
+
+    const textEl  = document.getElementById('heroText');
+    const subEl   = document.getElementById('heroSub');
+    const pills   = document.querySelectorAll('.mode-pill');
+
+    let idx = 0;
+
+    function activatePill(mode) {
+      pills.forEach(p => p.classList.toggle('active', p.dataset.mode === mode));
+    }
+
+    function transition(to) {
+      textEl.style.opacity = '0';
+      subEl.style.opacity  = '0';
+
+      setTimeout(() => {
+        textEl.textContent = to.text;
+        subEl.textContent  = to.sub;
+        activatePill(to.mode);
+        textEl.style.opacity = '1';
+        subEl.style.opacity  = '1';
+      }, 480);
+    }
+
+    // Start cycle after initial display
+    setTimeout(() => {
+      setInterval(() => {
+        idx = (idx + 1) % STATES.length;
+        transition(STATES[idx]);
+      }, 3800);
+    }, 2600);
+
+    // ── Scroll reveal ───────────────────────────────────────────────────────
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

@@ -1,21 +1,36 @@
 {
-    "manifest_version": 3,
-    "name": "Quoty",
-    "version": "1.0",
-    "description": "Spice up your ChatGPT with quotes",
-    "permissions": [],
-    "host_permissions": [
-        "https://quoteslate.vercel.app/*"
-    ],
-    "content_scripts": [
-        {
-            "matches": [
-                "https://chatgpt.com/*"
-            ],
-            "js": [
-                "content.js"
-            ],
-            "run_at": "document_start"
-        }
-    ]
+  "manifest_version": 3,
+  "name": "Quoty",
+  "version": "2.0.0",
+  "description": "Replace the quote on ChatGPT's home screen with quotes, time, or a custom message.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://stoic.tekloon.net/*",
+    "https://thequoteshub.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chat.com/*",
+        "*://chatgpt.com/*",
+        "*://chat.openai.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "hide-quote.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Quoty"
+  },
+  "icons": {
+    "128": "images/128.png"
+  }
 }

@@ -1,0 +1,8 @@
+/* Hide known quote selectors before React renders, revealed by content.js after our text is applied */
+[class*="tagline"],
+[class*="subtitle"],
+[class*="greeting"],
+[data-testid*="tagline"],
+[data-testid*="subtitle"] {
+  visibility: hidden !important;
+}
